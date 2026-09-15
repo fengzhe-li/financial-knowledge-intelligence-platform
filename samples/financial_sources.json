@@ -1,0 +1,24 @@
+[
+  {
+    "uri": "samples/barclays_annual_report_excerpt.txt",
+    "source_type": "annual_report",
+    "title": "Barclays Annual Report Excerpt",
+    "issuer": "Barclays PLC",
+    "published_at": "2025-02-13"
+  },
+  {
+    "uri": "samples/fca_operational_resilience_excerpt.txt",
+    "source_type": "fca_regulatory",
+    "title": "FCA Operational Resilience Excerpt",
+    "issuer": "Financial Conduct Authority",
+    "published_at": "2025-03-31"
+  },
+  {
+    "uri": "samples/market_news_excerpt.txt",
+    "source_type": "financial_news",
+    "title": "UK Market News Excerpt",
+    "issuer": "Public market commentary",
+    "published_at": "2025-04-10"
+  }
+]
+

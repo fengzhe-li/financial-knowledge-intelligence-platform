@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 640" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4a5a7a"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1180" height="640" fill="#ffffff"/>
+  <text x="590" y="34" text-anchor="middle" font-size="22" font-weight="700" fill="#1a1a2e">Financial Knowledge Intelligence Platform — System Architecture</text>
+
+  <!-- Sources -->
+  <g>
+    <rect x="30" y="70" width="220" height="90" rx="8" fill="#eef2f9" stroke="#2c3e6b" stroke-width="1.5"/>
+    <text x="140" y="94" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a2e">Financial Sources</text>
+    <text x="140" y="114" text-anchor="middle" font-size="11" fill="#333">Source manifest (JSON)</text>
+    <text x="140" y="130" text-anchor="middle" font-size="11" fill="#333">SEC EDGAR collector output</text>
+    <text x="140" y="146" text-anchor="middle" font-size="11" fill="#333">(annual reports, filings, news)</text>
+  </g>
+
+  <!-- Orchestration -->
+  <g>
+    <rect x="30" y="200" width="220" height="90" rx="8" fill="#eef2f9" stroke="#2c3e6b" stroke-width="1.5"/>
+    <text x="140" y="224" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a2e">Orchestration</text>
+    <text x="140" y="244" text-anchor="middle" font-size="11" fill="#333">fkip.cli (CLI batch)</text>
+    <text x="140" y="260" text-anchor="middle" font-size="11" fill="#333">Scheduled runner</text>
+    <text x="140" y="276" text-anchor="middle" font-size="11" fill="#333">Airflow DAG (dags/)</text>
+  </g>
+
+  <!-- Pipeline column -->
+  <g>
+    <rect x="310" y="70" width="240" height="70" rx="8" fill="#eef2f9" stroke="#2c3e6b" stroke-width="1.5"/>
+    <text x="430" y="98" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a2e">IngestionPipeline</text>
+    <text x="430" y="118" text-anchor="middle" font-size="11" fill="#333">fkip.application.pipeline</text>
+  </g>
+
+  <g>
+    <rect x="310" y="170" width="240" height="70" rx="8" fill="#eef2f9" stroke="#2c3e6b" stroke-width="1.5"/>
+    <text x="430" y="198" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a2e">Data Quality Layer</text>
+    <text x="430" y="218" text-anchor="middle" font-size="11" fill="#333">fkip.domain.quality</text>
+  </g>
+
+  <g>
+    <rect x="310" y="270" width="240" height="70" rx="8" fill="#eef2f9" stroke="#2c3e6b" stroke-width="1.5"/>
+    <text x="430" y="298" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a2e">Document Reader</text>
+    <text x="430" y="318" text-anchor="middle" font-size="11" fill="#333">fkip.infrastructure.document_reader</text>
+  </g>
+
+  <g>
+    <rect x="310" y="370" width="240" height="70" rx="8" fill="#eef2f9" stroke="#2c3e6b" stroke-width="1.5"/>
+    <text x="430" y="394" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a2e">Processing</text>
+    <text x="430" y="414" text-anchor="middle" font-size="11" fill="#333">clean · classify · keywords</text>
+    <text x="430" y="428" text-anchor="middle" font-size="10" fill="#555">fkip.domain.processing</text>
+  </g>
+
+  <!-- Storage column -->
+  <g>
+    <rect x="620" y="70" width="230" height="60" rx="8" fill="#e9f5ee" stroke="#2c6b4a" stroke-width="1.5"/>
+    <text x="735" y="94" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a2e">Metadata Repository</text>
+    <text x="735" y="112" text-anchor="middle" font-size="10.5" fill="#333">SQLite (local) / PostgreSQL</text>
+  </g>
+  <g>
+    <rect x="620" y="150" width="230" height="60" rx="8" fill="#e9f5ee" stroke="#2c6b4a" stroke-width="1.5"/>
+    <text x="735" y="174" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a2e">Object Storage</text>
+    <text x="735" y="192" text-anchor="middle" font-size="10.5" fill="#333">LocalObjectStorage (raw text)</text>
+  </g>
+  <g>
+    <rect x="620" y="230" width="230" height="60" rx="8" fill="#e9f5ee" stroke="#2c6b4a" stroke-width="1.5"/>
+    <text x="735" y="254" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a2e">Vector Store</text>
+    <text x="735" y="272" text-anchor="middle" font-size="10.5" fill="#333">LocalVectorStore / Qdrant</text>
+  </g>
+  <g>
+    <rect x="620" y="310" width="230" height="60" rx="8" fill="#e9f5ee" stroke="#2c6b4a" stroke-width="1.5"/>
+    <text x="735" y="334" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a2e">RAG Analysis Service</text>
+    <text x="735" y="352" text-anchor="middle" font-size="10.5" fill="#333">fkip.application.analysis</text>
+  </g>
+
+  <!-- Interfaces column -->
+  <g>
+    <rect x="930" y="90" width="220" height="60" rx="8" fill="#f7eef2" stroke="#6b2c50" stroke-width="1.5"/>
+    <text x="1040" y="114" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a2e">FastAPI Backend</text>
+    <text x="1040" y="132" text-anchor="middle" font-size="10.5" fill="#333">/documents · /search · /analysis</text>
+  </g>
+  <g>
+    <rect x="930" y="170" width="220" height="60" rx="8" fill="#f7eef2" stroke="#6b2c50" stroke-width="1.5"/>
+    <text x="1040" y="194" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a2e">Streamlit Dashboard</text>
+    <text x="1040" y="212" text-anchor="middle" font-size="10.5" fill="#333">calls FastAPI only</text>
+  </g>
+
+  <!-- Bottom notes -->
+  <rect x="30" y="480" width="1120" height="130" rx="8" fill="#fbf7ec" stroke="#8a6d1a" stroke-width="1"/>
+  <text x="50" y="505" font-size="12.5" font-weight="700" fill="#1a1a2e">Notes (kept accurate to the current implementation)</text>
+  <text x="50" y="528" font-size="11.5" fill="#333">• MinIO is present in Docker Compose as a future object-storage-compatible option; the active storage adapter is LocalObjectStorage.</text>
+  <text x="50" y="548" font-size="11.5" fill="#333">• The default embedding pipeline is deterministic and local; optional OpenAI summarisation is available behind LLM_PROVIDER=openai inside the RAG layer.</text>
+  <text x="50" y="568" font-size="11.5" fill="#333">• Airflow DAG delegates directly to fkip.application.pipeline — orchestration does not duplicate business logic.</text>
+  <text x="50" y="588" font-size="11.5" fill="#333">• PostgreSQL is the system of record for metadata/lineage; Qdrant is used for vector retrieval — they are never treated as the same store.</text>
+
+  <!-- Arrows -->
+  <path d="M140,160 L140,200" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <path d="M250,140 L310,105" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <path d="M250,245 L310,205" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <path d="M430,140 L430,170" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <path d="M430,240 L430,270" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <path d="M430,340 L430,370" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+
+  <path d="M550,395 C 585,395 585,100 620,100" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <path d="M550,400 C 585,400 585,180 620,180" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <path d="M550,405 C 585,405 585,260 620,260" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+
+  <path d="M735,290 L735,310" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <path d="M735,130 C 850,130 850,330 850,340" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+
+  <path d="M850,255 C 900,255 900,120 930,120" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <path d="M850,105 L930,120" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <path d="M850,340 C 900,340 900,145 930,145" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <path d="M1040,150 L1040,170" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+</svg>

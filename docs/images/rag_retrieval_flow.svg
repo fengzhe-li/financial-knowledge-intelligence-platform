@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 560" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4a5a7a"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1180" height="560" fill="#ffffff"/>
+  <text x="590" y="34" text-anchor="middle" font-size="22" font-weight="700" fill="#1a1a2e">Retrieval-Augmented Financial Analysis — Query Flow</text>
+
+  <!-- Indexing side (top row) -->
+  <text x="30" y="72" font-size="13" font-weight="700" fill="#555">Indexing (happens during ingestion)</text>
+  <g>
+    <rect x="30" y="85" width="190" height="60" rx="8" fill="#eef2f9" stroke="#2c3e6b" stroke-width="1.5"/>
+    <text x="125" y="110" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a2e">Processed Document</text>
+    <text x="125" y="128" text-anchor="middle" font-size="10.5" fill="#333">cleaned text</text>
+  </g>
+  <g>
+    <rect x="255" y="85" width="190" height="60" rx="8" fill="#eef2f9" stroke="#2c3e6b" stroke-width="1.5"/>
+    <text x="350" y="106" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a2e">Chunking</text>
+    <text x="350" y="124" text-anchor="middle" font-size="10.5" fill="#333">fkip.domain.chunking</text>
+    <text x="350" y="138" text-anchor="middle" font-size="10" fill="#555">overlapping chunks</text>
+  </g>
+  <g>
+    <rect x="480" y="85" width="190" height="60" rx="8" fill="#eef2f9" stroke="#2c3e6b" stroke-width="1.5"/>
+    <text x="575" y="106" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a2e">Embeddings</text>
+    <text x="575" y="124" text-anchor="middle" font-size="10.5" fill="#333">fkip.infrastructure.embeddings</text>
+    <text x="575" y="138" text-anchor="middle" font-size="10" fill="#555">deterministic, local</text>
+  </g>
+  <g>
+    <rect x="705" y="85" width="220" height="60" rx="8" fill="#e9f5ee" stroke="#2c6b4a" stroke-width="1.5"/>
+    <text x="815" y="106" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a2e">Vector Index</text>
+    <text x="815" y="124" text-anchor="middle" font-size="10.5" fill="#333">LocalVectorStore / Qdrant</text>
+    <text x="815" y="138" text-anchor="middle" font-size="10" fill="#555">document + chunk vectors</text>
+  </g>
+
+  <path d="M220,115 L255,115" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow2)"/>
+  <path d="M445,115 L480,115" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow2)"/>
+  <path d="M670,115 L705,115" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow2)"/>
+
+  <!-- divider -->
+  <line x1="30" y1="180" x2="1150" y2="180" stroke="#ccc" stroke-width="1" stroke-dasharray="4,4"/>
+
+  <!-- Query side -->
+  <text x="30" y="205" font-size="13" font-weight="700" fill="#555">Query (per request to /analysis/answer)</text>
+
+  <g>
+    <rect x="30" y="220" width="190" height="70" rx="8" fill="#f7eef2" stroke="#6b2c50" stroke-width="1.5"/>
+    <text x="125" y="248" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a2e">Question</text>
+    <text x="125" y="266" text-anchor="middle" font-size="10.5" fill="#333">FastAPI / CLI / dashboard</text>
+  </g>
+
+  <g>
+    <rect x="255" y="220" width="220" height="70" rx="8" fill="#eef2f9" stroke="#2c3e6b" stroke-width="1.5"/>
+    <text x="365" y="244" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a2e">Query Embedding</text>
+    <text x="365" y="262" text-anchor="middle" font-size="10.5" fill="#333">same deterministic embedder</text>
+    <text x="365" y="278" text-anchor="middle" font-size="10" fill="#555">fkip.application.analysis</text>
+  </g>
+
+  <g>
+    <rect x="510" y="220" width="220" height="70" rx="8" fill="#e9f5ee" stroke="#2c6b4a" stroke-width="1.5"/>
+    <text x="620" y="244" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a2e">Top-k Chunk Retrieval</text>
+    <text x="620" y="262" text-anchor="middle" font-size="10.5" fill="#333">vector similarity search</text>
+    <text x="620" y="278" text-anchor="middle" font-size="10" fill="#555">against Vector Index above</text>
+  </g>
+
+  <g>
+    <rect x="765" y="220" width="220" height="70" rx="8" fill="#eef2f9" stroke="#2c3e6b" stroke-width="1.5"/>
+    <text x="875" y="244" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a2e">Answer Construction</text>
+    <text x="875" y="262" text-anchor="middle" font-size="10.5" fill="#333">extractive (default) or</text>
+    <text x="875" y="278" text-anchor="middle" font-size="10" fill="#555">optional OpenAI (LLM_PROVIDER=openai)</text>
+  </g>
+
+  <g>
+    <rect x="1015" y="220" width="135" height="70" rx="8" fill="#f7eef2" stroke="#6b2c50" stroke-width="1.5"/>
+    <text x="1082" y="248" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a2e">Cited Answer</text>
+    <text x="1082" y="266" text-anchor="middle" font-size="10" fill="#333">+ citations[]</text>
+  </g>
+
+  <path d="M220,255 L255,255" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow2)"/>
+  <path d="M475,255 L510,255" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow2)"/>
+  <path d="M730,255 L765,255" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow2)"/>
+  <path d="M985,255 L1015,255" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow2)"/>
+  <path d="M620,220 C 620,180 815,180 815,145" stroke="#2c6b4a" stroke-width="1.5" fill="none" marker-end="url(#arrow2)" stroke-dasharray="3,3"/>
+
+  <!-- Citation contents box -->
+  <rect x="30" y="330" width="1120" height="130" rx="8" fill="#fbf7ec" stroke="#8a6d1a" stroke-width="1"/>
+  <text x="50" y="356" font-size="12.5" font-weight="700" fill="#1a1a2e">Each citation returned by /analysis/answer includes</text>
+  <text x="50" y="380" font-size="11.5" fill="#333">document_id · title · issuer · source uri · chunk_id · chunk_index · relevance score · excerpt</text>
+  <text x="50" y="405" font-size="11.5" fill="#333">Design decisions kept accurate to the code:</text>
+  <text x="50" y="425" font-size="11.5" fill="#333">• The default answer mode is extractive and deterministic — no chunk content is invented.</text>
+  <text x="50" y="445" font-size="11.5" fill="#333">• When LLM_PROVIDER=openai is set, the model is instructed to use only retrieved evidence and cite it with bracketed references.</text>
+
+  <text x="1160" y="480" text-anchor="end" font-size="10" fill="#888">fkip.application.analysis · fkip.interfaces.api.main (/analysis/answer)</text>
+</svg>

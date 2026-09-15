@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 620" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4a5a7a"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1000" height="620" fill="#ffffff"/>
+  <text x="500" y="34" text-anchor="middle" font-size="22" font-weight="700" fill="#1a1a2e">Docker Compose — Service Interaction</text>
+  <text x="500" y="56" text-anchor="middle" font-size="12" fill="#666">docker-compose.yml services, ports and startup dependencies</text>
+
+  <g>
+    <rect x="60" y="90" width="230" height="80" rx="8" fill="#f7eef2" stroke="#6b2c50" stroke-width="1.5"/>
+    <text x="175" y="116" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a2e">dashboard</text>
+    <text x="175" y="134" text-anchor="middle" font-size="10.5" fill="#333">Streamlit :8501</text>
+    <text x="175" y="150" text-anchor="middle" font-size="10.5" fill="#333">FKIP_API_URL=http://api:8000</text>
+  </g>
+
+  <g>
+    <rect x="380" y="90" width="230" height="80" rx="8" fill="#f7eef2" stroke="#6b2c50" stroke-width="1.5"/>
+    <text x="495" y="116" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a2e">api</text>
+    <text x="495" y="134" text-anchor="middle" font-size="10.5" fill="#333">FastAPI :8000</text>
+    <text x="495" y="150" text-anchor="middle" font-size="10.5" fill="#333">volume: ./data:/app/data</text>
+  </g>
+
+  <g>
+    <rect x="700" y="90" width="230" height="80" rx="8" fill="#eef2f9" stroke="#2c3e6b" stroke-width="1.5"/>
+    <text x="815" y="116" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a2e">migrate</text>
+    <text x="815" y="134" text-anchor="middle" font-size="10.5" fill="#333">alembic upgrade head</text>
+    <text x="815" y="150" text-anchor="middle" font-size="10.5" fill="#333">one-shot, runs before api</text>
+  </g>
+
+  <g>
+    <rect x="380" y="260" width="230" height="90" rx="8" fill="#e9f5ee" stroke="#2c6b4a" stroke-width="1.5"/>
+    <text x="495" y="286" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a2e">postgres</text>
+    <text x="495" y="304" text-anchor="middle" font-size="10.5" fill="#333">pgvector/pgvector:pg16 :5432</text>
+    <text x="495" y="320" text-anchor="middle" font-size="10.5" fill="#333">db=financial_intelligence</text>
+    <text x="495" y="336" text-anchor="middle" font-size="10" fill="#555">structured metadata + lineage</text>
+  </g>
+
+  <g>
+    <rect x="700" y="260" width="230" height="90" rx="8" fill="#e9f5ee" stroke="#2c6b4a" stroke-width="1.5"/>
+    <text x="815" y="286" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a2e">qdrant</text>
+    <text x="815" y="304" text-anchor="middle" font-size="10.5" fill="#333">qdrant/qdrant:v1.12.5 :6333</text>
+    <text x="815" y="320" text-anchor="middle" font-size="10" fill="#555">document + chunk vector search</text>
+  </g>
+
+  <g>
+    <rect x="60" y="260" width="230" height="90" rx="8" fill="#f4f4f4" stroke="#888" stroke-width="1.5" stroke-dasharray="5,3"/>
+    <text x="175" y="286" text-anchor="middle" font-size="13" font-weight="700" fill="#444">minio</text>
+    <text x="175" y="304" text-anchor="middle" font-size="10.5" fill="#555">MinIO :9000 / :9001</text>
+    <text x="175" y="322" text-anchor="middle" font-size="10" fill="#a55">included, not yet the</text>
+    <text x="175" y="336" text-anchor="middle" font-size="10" fill="#a55">active storage adapter</text>
+  </g>
+
+  <!-- Arrows: dependency / call direction -->
+  <path d="M290,130 L380,130" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow3)"/>
+  <text x="335" y="122" text-anchor="middle" font-size="9.5" fill="#555">calls</text>
+
+  <path d="M700,130 L610,130" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow3)" stroke-dasharray="4,3"/>
+  <text x="655" y="122" text-anchor="middle" font-size="9.5" fill="#555">starts before</text>
+
+  <path d="M495,260 L495,170" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow3)"/>
+  <text x="530" y="220" text-anchor="middle" font-size="9.5" fill="#555">reads/writes</text>
+
+  <path d="M815,260 L815,170" stroke="#4a5a7a" stroke-width="1.5" fill="none" marker-end="url(#arrow3)"/>
+  <text x="850" y="220" text-anchor="middle" font-size="9.5" fill="#555">search/upsert</text>
+
+  <path d="M815,90 L815,170" stroke="#2c3e6b" stroke-width="1.5" fill="none" marker-end="url(#arrow3)"/>
+
+  <path d="M815,260 C 815,220 495,220 495,260" stroke="#888" stroke-width="1" fill="none" stroke-dasharray="3,3"/>
+  <text x="655" y="215" text-anchor="middle" font-size="9" fill="#888">migrate depends_on postgres healthy</text>
+
+  <!-- Notes -->
+  <rect x="60" y="400" width="870" height="180" rx="8" fill="#fbf7ec" stroke="#8a6d1a" stroke-width="1"/>
+  <text x="80" y="426" font-size="12.5" font-weight="700" fill="#1a1a2e">Startup order (as defined in docker-compose.yml)</text>
+  <text x="80" y="450" font-size="11.5" fill="#333">1. postgres starts and reports healthy (pg_isready healthcheck).</text>
+  <text x="80" y="470" font-size="11.5" fill="#333">2. migrate runs "alembic upgrade head" once against postgres, then exits successfully.</text>
+  <text x="80" y="490" font-size="11.5" fill="#333">3. qdrant starts independently (no dependency on postgres/migrate).</text>
+  <text x="80" y="510" font-size="11.5" fill="#333">4. api starts only after migrate completes successfully and qdrant has started.</text>
+  <text x="80" y="530" font-size="11.5" fill="#333">5. dashboard starts after api and calls it exclusively over HTTP — it never talks to postgres/qdrant/minio directly.</text>
+  <text x="80" y="558" font-size="11" fill="#a55">minio is declared in Docker Compose for a future S3-compatible storage adapter; the current api container still writes raw text via LocalObjectStorage.</text>
+</svg>

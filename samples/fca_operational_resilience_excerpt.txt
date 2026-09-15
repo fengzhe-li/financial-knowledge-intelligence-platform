@@ -1,0 +1,2 @@
+The FCA expects firms to identify important business services, set impact tolerances and maintain evidence that they can remain within those tolerances during severe but plausible disruption. Financial institutions should improve governance, incident response, third-party risk management and cyber resilience across critical technology services.
+
