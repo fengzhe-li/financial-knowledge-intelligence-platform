@@ -3,7 +3,10 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from fastapi.testclient import TestClient
+try:
+    from fastapi.testclient import TestClient
+except Exception:
+    TestClient = None
 
 from fkip.application.analysis import FinancialAnalysisService
 from fkip.domain.chunking import chunk_document_text
@@ -17,7 +20,10 @@ from fkip.interfaces.api.main import app
 class ApiExtensionsTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        if TestClient is None:
+            raise unittest.SkipTest("TestClient or httpx not available")
         cls.client = TestClient(app)
+
 
     def test_health_endpoint(self):
         response = self.client.get("/health")
