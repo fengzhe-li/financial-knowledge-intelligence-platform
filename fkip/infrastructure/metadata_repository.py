@@ -38,6 +38,9 @@ class MetadataRepository:
     ) -> None:
         raise NotImplementedError
 
+    def list_ingestion_runs(self, limit: int = 10) -> list[dict]:
+        raise NotImplementedError
+
 
 class SQLiteMetadataRepository(MetadataRepository):
     def __init__(self, database_path: Path) -> None:
@@ -64,6 +67,40 @@ class SQLiteMetadataRepository(MetadataRepository):
                     summary TEXT NOT NULL,
                     keywords_json TEXT NOT NULL,
                     topics_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS ingestion_runs (
+                    run_id TEXT PRIMARY KEY,
+                    status TEXT NOT NULL,
+                    manifest_path TEXT,
+                    started_at TEXT NOT NULL,
+                    finished_at TEXT,
+                    duration_seconds REAL,
+                    sources_seen INTEGER,
+                    documents_ingested INTEGER,
+                    documents_skipped INTEGER,
+                    duplicate_sources INTEGER,
+                    validation_failures INTEGER,
+                    error_count INTEGER,
+                    metadata_json TEXT,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS ingestion_items (
+                    item_id TEXT PRIMARY KEY,
+                    run_id TEXT,
+                    source_uri TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    stage TEXT,
+                    error_message TEXT,
+                    document_id TEXT,
                     created_at TEXT NOT NULL
                 )
                 """
@@ -106,7 +143,52 @@ class SQLiteMetadataRepository(MetadataRepository):
         return None
 
     def record_ingestion_run(self, result: PipelineRunResult, manifest_path: str | None = None) -> None:
-        return None
+        from datetime import UTC, datetime
+
+        status = "running" if result.finished_at is None else ("completed" if not result.errors else "completed_with_errors")
+        payload = {
+            "document_ids": result.document_ids,
+            "errors": [asdict(error) for error in result.errors],
+        }
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO ingestion_runs (
+                    run_id, status, manifest_path, started_at, finished_at, duration_seconds,
+                    sources_seen, documents_ingested, documents_skipped, duplicate_sources,
+                    validation_failures, error_count, metadata_json, created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(run_id) DO UPDATE SET
+                    status=excluded.status,
+                    manifest_path=excluded.manifest_path,
+                    finished_at=excluded.finished_at,
+                    duration_seconds=excluded.duration_seconds,
+                    sources_seen=excluded.sources_seen,
+                    documents_ingested=excluded.documents_ingested,
+                    documents_skipped=excluded.documents_skipped,
+                    duplicate_sources=excluded.duplicate_sources,
+                    validation_failures=excluded.validation_failures,
+                    error_count=excluded.error_count,
+                    metadata_json=excluded.metadata_json
+                """,
+                (
+                    result.run_id,
+                    status,
+                    manifest_path,
+                    result.started_at,
+                    result.finished_at,
+                    result.duration_seconds,
+                    result.sources_seen,
+                    result.documents_ingested,
+                    result.documents_skipped,
+                    result.duplicate_sources,
+                    result.validation_failures,
+                    len(result.errors),
+                    json.dumps(payload),
+                    datetime.now(UTC).isoformat(),
+                ),
+            )
 
     def record_ingestion_item(
         self,
@@ -118,7 +200,69 @@ class SQLiteMetadataRepository(MetadataRepository):
         error_message: str | None = None,
         metadata: dict | None = None,
     ) -> None:
-        return None
+        from datetime import UTC, datetime
+        from uuid import uuid4
+
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO ingestion_items (
+                    item_id, run_id, source_uri, status, stage, error_message, document_id, created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    str(uuid4()),
+                    run_id,
+                    source_uri,
+                    status,
+                    stage,
+                    error_message,
+                    document_id,
+                    datetime.now(UTC).isoformat(),
+                ),
+            )
+
+    def list_ingestion_runs(self, limit: int = 10) -> list[dict]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT run_id, status, manifest_path, started_at, finished_at, duration_seconds,
+                       sources_seen, documents_ingested, documents_skipped, duplicate_sources,
+                       validation_failures, error_count, metadata_json, created_at
+                FROM ingestion_runs
+                ORDER BY started_at DESC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+        runs = []
+        for r in rows:
+            meta = {}
+            if r[12]:
+                try:
+                    meta = json.loads(r[12])
+                except json.JSONDecodeError:
+                    pass
+            runs.append(
+                {
+                    "run_id": r[0],
+                    "status": r[1],
+                    "manifest_path": r[2],
+                    "started_at": r[3],
+                    "finished_at": r[4],
+                    "duration_seconds": r[5],
+                    "sources_seen": r[6],
+                    "documents_ingested": r[7],
+                    "documents_skipped": r[8],
+                    "duplicate_sources": r[9],
+                    "validation_failures": r[10],
+                    "error_count": r[11],
+                    "errors": meta.get("errors", []),
+                    "created_at": r[13],
+                }
+            )
+        return runs
 
     @staticmethod
     def _from_row(row: tuple) -> ProcessedDocument:
@@ -324,6 +468,44 @@ class PostgresMetadataRepository(MetadataRepository):
                     """,
                     (run_id, document_id, source_uri, status, stage, error_message, json.dumps(metadata or {})),
                 )
+
+    def list_ingestion_runs(self, limit: int = 10) -> list[dict]:
+        with self._connect() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT run_id, status, manifest_path, started_at, finished_at, duration_seconds,
+                           sources_seen, documents_ingested, documents_skipped, duplicate_sources,
+                           validation_failures, error_count, metadata, created_at
+                    FROM ingestion_runs
+                    ORDER BY started_at DESC
+                    LIMIT %s
+                    """,
+                    (limit,),
+                )
+                rows = cursor.fetchall()
+        runs = []
+        for r in rows:
+            meta = r[12] if isinstance(r[12], dict) else {}
+            runs.append(
+                {
+                    "run_id": r[0],
+                    "status": r[1],
+                    "manifest_path": r[2],
+                    "started_at": r[3].isoformat() if hasattr(r[3], "isoformat") else str(r[3]),
+                    "finished_at": r[4].isoformat() if hasattr(r[4], "isoformat") and r[4] else (str(r[4]) if r[4] else None),
+                    "duration_seconds": r[5],
+                    "sources_seen": r[6],
+                    "documents_ingested": r[7],
+                    "documents_skipped": r[8],
+                    "duplicate_sources": r[9],
+                    "validation_failures": r[10],
+                    "error_count": r[11],
+                    "errors": meta.get("errors", []),
+                    "created_at": r[13].isoformat() if hasattr(r[13], "isoformat") else str(r[13]),
+                }
+            )
+        return runs
 
 
 def sqlite_path_from_url(database_url: str) -> Path:

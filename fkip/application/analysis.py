@@ -19,6 +19,51 @@ class Citation:
     chunk_index: int
     score: float
     excerpt: str
+    published_at: str | None = None
+
+
+@dataclass(frozen=True)
+class CompanyEvidence:
+    issuer: str
+    topic: str
+    citations: list[Citation]
+    matching_documents: list[dict]
+    retrieval_count: int
+    summary: str
+    evidence_gap: bool
+    gap_reason: str | None = None
+
+    def to_dict(self) -> dict:
+        return {
+            "issuer": self.issuer,
+            "topic": self.topic,
+            "citations": [asdict(citation) for citation in self.citations],
+            "matching_documents": self.matching_documents,
+            "retrieval_count": self.retrieval_count,
+            "summary": self.summary,
+            "evidence_gap": self.evidence_gap,
+            "gap_reason": self.gap_reason,
+        }
+
+
+@dataclass(frozen=True)
+class CompanyComparisonResult:
+    topic: str
+    issuer_a: str
+    issuer_b: str
+    company_a: CompanyEvidence
+    company_b: CompanyEvidence
+    comparison_notes: str
+
+    def to_dict(self) -> dict:
+        return {
+            "topic": self.topic,
+            "issuer_a": self.issuer_a,
+            "issuer_b": self.issuer_b,
+            "company_a": self.company_a.to_dict(),
+            "company_b": self.company_b.to_dict(),
+            "comparison_notes": self.comparison_notes,
+        }
 
 
 @dataclass(frozen=True)
@@ -114,6 +159,7 @@ class FinancialAnalysisService:
                     document_id=document.document_id,
                     title=document.title,
                     issuer=document.issuer,
+                    published_at=document.published_at,
                     uri=document.uri,
                     chunk_id=item["chunk_id"],
                     chunk_index=item["chunk_index"],
@@ -123,6 +169,98 @@ class FinancialAnalysisService:
             )
         answer = self.summariser.summarise(question, citations)
         return FinancialAnalysisAnswer(question=question, answer=answer, citations=citations, retrieval_count=len(citations))
+
+    def compare_issuers(
+        self,
+        topic: str,
+        issuer_a: str,
+        issuer_b: str,
+        limit: int = 4,
+    ) -> CompanyComparisonResult:
+        company_a = self._gather_company_evidence(topic, issuer_a, limit)
+        company_b = self._gather_company_evidence(topic, issuer_b, limit)
+
+        notes_parts = []
+        if company_a.evidence_gap and company_b.evidence_gap:
+            notes_parts.append(
+                f"Neither {issuer_a} nor {issuer_b} returned relevant disclosure passages for '{topic}' in the indexed corpus."
+            )
+        elif company_a.evidence_gap:
+            notes_parts.append(
+                f"Evidence on '{topic}' was retrieved for {issuer_b} ({company_b.retrieval_count} passage(s)), while {issuer_a} had no matching passages in the current corpus."
+            )
+        elif company_b.evidence_gap:
+            notes_parts.append(
+                f"Evidence on '{topic}' was retrieved for {issuer_a} ({company_a.retrieval_count} passage(s)), while {issuer_b} had no matching passages in the current corpus."
+            )
+        else:
+            notes_parts.append(
+                f"Direct disclosure passages on '{topic}' were retrieved from both {issuer_a} ({company_a.retrieval_count} passage(s)) and {issuer_b} ({company_b.retrieval_count} passage(s))."
+            )
+        notes_parts.append(
+            "Note: Disclosure differences reflect the indexed reporting passages and do not imply differential real-world risk, compliance, or operational standing."
+        )
+
+        return CompanyComparisonResult(
+            topic=topic,
+            issuer_a=issuer_a,
+            issuer_b=issuer_b,
+            company_a=company_a,
+            company_b=company_b,
+            comparison_notes=" ".join(notes_parts),
+        )
+
+    def _gather_company_evidence(self, topic: str, issuer: str, limit: int) -> CompanyEvidence:
+        retrieved = self.vector_store.search_chunks(topic, limit=limit, issuer=issuer)
+        citations: list[Citation] = []
+        doc_map: dict[str, dict] = {}
+        for item in retrieved:
+            document = self.metadata_repository.get(item["document_id"])
+            if document is None:
+                continue
+            if document.document_id not in doc_map:
+                doc_map[document.document_id] = {
+                    "document_id": document.document_id,
+                    "title": document.title,
+                    "published_at": document.published_at,
+                    "source_type": document.source_type.value,
+                    "uri": document.uri,
+                }
+            citations.append(
+                Citation(
+                    document_id=document.document_id,
+                    title=document.title,
+                    issuer=document.issuer,
+                    published_at=document.published_at,
+                    uri=document.uri,
+                    chunk_id=item["chunk_id"],
+                    chunk_index=item["chunk_index"],
+                    score=item["score"],
+                    excerpt=_clean_excerpt(item["text"]),
+                )
+            )
+
+        evidence_gap = len(citations) == 0 or (len(citations) > 0 and citations[0].score < 0.05)
+        gap_reason = (
+            f"No relevant indexed disclosure passages found for issuer '{issuer}' on topic '{topic}'."
+            if evidence_gap
+            else None
+        )
+        summary = (
+            self.summariser.summarise(f"What does {issuer} disclose regarding {topic}?", citations)
+            if citations
+            else f"No disclosure evidence available for {issuer} on this topic."
+        )
+        return CompanyEvidence(
+            issuer=issuer,
+            topic=topic,
+            citations=citations,
+            matching_documents=list(doc_map.values()),
+            retrieval_count=len(citations),
+            summary=summary,
+            evidence_gap=evidence_gap,
+            gap_reason=gap_reason,
+        )
 
 
 def _clean_excerpt(text: str, max_chars: int = 420) -> str:

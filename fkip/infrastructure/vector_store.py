@@ -22,8 +22,11 @@ class VectorStore:
     def search(self, query: str, limit: int = 5) -> list[dict]:
         raise NotImplementedError
 
-    def search_chunks(self, query: str, limit: int = 5) -> list[dict]:
+    def search_chunks(self, query: str, limit: int = 5, issuer: str | None = None) -> list[dict]:
         raise NotImplementedError
+
+    def get_document_chunks(self, document_id: str) -> list[dict]:
+        return []
 
 
 class LocalVectorStore(VectorStore):
@@ -58,6 +61,9 @@ class LocalVectorStore(VectorStore):
                 {
                     "document_id": document.document_id,
                     "title": document.title,
+                    "issuer": document.issuer,
+                    "published_at": document.published_at,
+                    "source_type": document.source_type.value,
                     "topics": document.topics,
                     "chunk_id": chunk.chunk_id,
                     "chunk_index": chunk.chunk_index,
@@ -85,14 +91,21 @@ class LocalVectorStore(VectorStore):
             )
         return sorted(scored, key=lambda item: item["score"], reverse=True)[:limit]
 
-    def search_chunks(self, query: str, limit: int = 5) -> list[dict]:
+    def search_chunks(self, query: str, limit: int = 5, issuer: str | None = None) -> list[dict]:
         query_vector = self.embedding_model.embed(query)
+        records = self._load()["chunks"]
+        if issuer:
+            clean_issuer = issuer.strip().lower()
+            records = [r for r in records if str(r.get("issuer", "")).strip().lower() == clean_issuer]
         scored = []
-        for record in self._load()["chunks"]:
+        for record in records:
             scored.append(
                 {
                     "document_id": record["document_id"],
                     "title": record["title"],
+                    "issuer": record.get("issuer"),
+                    "published_at": record.get("published_at"),
+                    "source_type": record.get("source_type"),
                     "topics": record["topics"],
                     "chunk_id": record["chunk_id"],
                     "chunk_index": record["chunk_index"],
@@ -103,6 +116,20 @@ class LocalVectorStore(VectorStore):
                 }
             )
         return sorted(scored, key=lambda item: item["score"], reverse=True)[:limit]
+
+    def get_document_chunks(self, document_id: str) -> list[dict]:
+        records = self._load()["chunks"]
+        return [
+            {
+                "chunk_id": r["chunk_id"],
+                "chunk_index": r["chunk_index"],
+                "start_char": r["start_char"],
+                "end_char": r["end_char"],
+                "text": r["text"],
+            }
+            for r in records
+            if r.get("document_id") == document_id
+        ]
 
     def _load(self) -> dict[str, list[dict]]:
         if not self.index_path.exists() or self.index_path.stat().st_size == 0:
@@ -165,6 +192,8 @@ class QdrantVectorStore(VectorStore):
                     "record_type": "chunk",
                     "document_id": document.document_id,
                     "title": document.title,
+                    "issuer": document.issuer,
+                    "published_at": document.published_at,
                     "topics": document.topics,
                     "chunk_id": chunk.chunk_id,
                     "chunk_index": chunk.chunk_index,
@@ -192,12 +221,14 @@ class QdrantVectorStore(VectorStore):
             for payload in [item.get("payload", {})]
         ]
 
-    def search_chunks(self, query: str, limit: int = 5) -> list[dict]:
-        results = self._search(self.chunk_collection, query, limit)
+    def search_chunks(self, query: str, limit: int = 5, issuer: str | None = None) -> list[dict]:
+        results = self._search(self.chunk_collection, query, limit, issuer=issuer)
         return [
             {
                 "document_id": payload["document_id"],
                 "title": payload["title"],
+                "issuer": payload.get("issuer"),
+                "published_at": payload.get("published_at"),
                 "topics": payload["topics"],
                 "chunk_id": payload["chunk_id"],
                 "chunk_index": payload["chunk_index"],
@@ -209,6 +240,39 @@ class QdrantVectorStore(VectorStore):
             for item in results
             for payload in [item.get("payload", {})]
         ]
+
+    def get_document_chunks(self, document_id: str) -> list[dict]:
+        try:
+            res = self._request(
+                "POST",
+                f"/collections/{self.chunk_collection}/points/scroll",
+                {
+                    "filter": {
+                        "must": [
+                            {
+                                "key": "document_id",
+                                "match": {"value": document_id},
+                            }
+                        ]
+                    },
+                    "limit": 100,
+                    "with_payload": True,
+                    "with_vector": False,
+                },
+            )
+            points = res.get("result", {}).get("points", [])
+            return [
+                {
+                    "chunk_id": p.get("payload", {}).get("chunk_id", ""),
+                    "chunk_index": p.get("payload", {}).get("chunk_index", 0),
+                    "start_char": p.get("payload", {}).get("start_char", 0),
+                    "end_char": p.get("payload", {}).get("end_char", 0),
+                    "text": p.get("payload", {}).get("text", ""),
+                }
+                for p in points
+            ]
+        except Exception:
+            return []
 
     def _ensure_collection(self, collection: str) -> None:
         self._request(
@@ -241,16 +305,26 @@ class QdrantVectorStore(VectorStore):
             },
         )
 
-    def _search(self, collection: str, query: str, limit: int) -> list[dict]:
+    def _search(self, collection: str, query: str, limit: int, issuer: str | None = None) -> list[dict]:
+        body: dict = {
+            "vector": self.embedding_model.embed(query),
+            "limit": limit,
+            "with_payload": True,
+            "with_vector": False,
+        }
+        if issuer:
+            body["filter"] = {
+                "must": [
+                    {
+                        "key": "issuer",
+                        "match": {"value": issuer},
+                    }
+                ]
+            }
         response = self._request(
             "POST",
             f"/collections/{collection}/points/search",
-            {
-                "vector": self.embedding_model.embed(query),
-                "limit": limit,
-                "with_payload": True,
-                "with_vector": False,
-            },
+            body,
         )
         return response.get("result", [])
 

@@ -20,6 +20,33 @@ Detailed supporting docs:
 - [End-to-end demo](DEMO.md)
 - [Dataset pipeline](docs/DATASET.md)
 
+## Evidence-First Web Research Workspace
+
+The platform features a modern, evidence-first financial research workspace built with **React 19 + TypeScript + Vite**, styled with a high-contrast dark FinTech design system and directly powered by the authoritative FastAPI backend.
+
+### Key Capabilities
+
+1. **Research Overview Dashboard**: Real-time telemetry, verified indexed document counts, source type & year distributions, and recent ingestion summaries.
+2. **Financial Document Explorer**: Multi-facet catalog search (issuer, source type, publication date), paginated tabular browsing, and detailed modal inspection with full metadata and indexed vector chunk inspection.
+3. **Evidence-Based AI Research**: Natural-language financial Q&A powered by deterministic extractive RAG, interactive numbered citations `[#]`, and a slide-out passage inspector drawer revealing exact text, relevance scores, and provenance.
+4. **Side-by-Side Company Comparison**: Isolated multi-issuer disclosure analysis on critical topics (Cybersecurity, Operational Resilience, Regulatory Compliance), explicit evidence gap reporting, and objective neutral observations.
+5. **Pipeline Operations & Lineage Ledger**: Full operational observability showing run-level processing duration, validation failures, skipped duplicates, and persistent audit records.
+
+### Interface Previews
+
+| Research Overview Dashboard | Document Explorer & Provenance |
+| :---: | :---: |
+| ![Research Overview](docs/images/screenshot_01_research_overview.png) | ![Document Explorer](docs/images/screenshot_02_document_explorer.png) |
+
+| Evidence-Based AI Research with Expanded Citation | Side-by-Side Company Comparison |
+| :---: | :---: |
+| ![AI Research](docs/images/screenshot_03_ai_research_expanded_citation.png) | ![Company Comparison](docs/images/screenshot_04_company_comparison.png) |
+
+| Pipeline Operations & Run Ledger |
+| :---: |
+| ![Pipeline Operations](docs/images/screenshot_05_pipeline_operations.png) |
+
+
 ## Current Architecture Analysis
 
 The original **Telecom Research Intelligence** project was a compact batch pipeline:
@@ -310,43 +337,63 @@ python -m fkip.cli benchmark samples/financial_sources.json \
   --output data/metrics/benchmark.json
 ```
 
-### 8. Start the API locally
+### 8. Start the Web Research Workspace (Production Mode)
+
+The FastAPI server automatically serves the compiled React 19 + TypeScript frontend application:
 
 ```bash
-uvicorn fkip.interfaces.api.main:app --reload
+uvicorn fkip.interfaces.api.main:app --host 0.0.0.0 --port 8000
 ```
 
 Open:
+- **Web Research Workspace**: `http://localhost:8000`
+- API Health Check: `http://localhost:8000/health`
+- Interactive OpenAPI Docs: `http://localhost:8000/docs`
+- Overview Statistics: `http://localhost:8000/overview`
 
-- Health: `http://localhost:8000/health`
-- Documents: `http://localhost:8000/documents`
-- Search: `http://localhost:8000/search?q=operational%20resilience`
+### 9. Frontend Development Mode (Hot Reload)
 
-### 9. Start the Streamlit dashboard
+For frontend UI development with Vite HMR:
 
-In a second terminal, run:
+```bash
+# Terminal 1: authoritative backend
+uvicorn fkip.interfaces.api.main:app --port 8000 --reload
+
+# Terminal 2: Vite development server with proxy
+cd frontend
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173`. Vite proxies API calls directly to `http://localhost:8000`.
+
+### 10. Start the Operational Streamlit Dashboard (Diagnostic Use)
+
+The original Streamlit interface remains fully supported for diagnostic and operational telemetry:
 
 ```bash
 streamlit run fkip/interfaces/dashboard/app.py
 ```
 
-Open:
+Open `http://localhost:8501`.
 
-- Dashboard: `http://localhost:8501`
-
-The dashboard reads from FastAPI rather than duplicating business logic.
-
-## API Endpoints
+## Authoritative API Endpoints
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
-| `GET` | `/health` | Service health check |
-| `POST` | `/documents` | Ingest one document from a URI |
-| `GET` | `/documents` | List indexed document metadata |
-| `GET` | `/documents/{document_id}` | Retrieve document summary and metadata |
-| `GET` | `/search?q=...` | Search indexed documents |
-| `GET` | `/pipeline-stats` | Retrieve latest ingestion metrics |
-| `POST` | `/analysis/answer` | Return a traceable financial analysis answer with document citations |
+| `GET` | `/` | Serves compiled React 19 Web Research Workspace |
+| `GET` | `/health` | Service health and environment status |
+| `GET` | `/overview` | Workspace overview statistics (issuers, documents, year/type distributions) |
+| `GET` | `/documents` | List or paginate documents with search, issuer, type, and year filters |
+| `GET` | `/documents/{document_id}` | Retrieve document summary, full clean text, and metadata |
+| `GET` | `/documents/{document_id}/chunks` | Retrieve chunked vector passages for a specific document |
+| `POST` | `/documents` | Ingest one document from a validated URI (with SSRF protection) |
+| `GET` | `/search?q=...` | Semantic vector search across indexed documents |
+| `GET` | `/pipeline-stats` | Latest ingestion metrics and execution errors |
+| `GET` | `/pipeline-runs` | Historical run ledger persisted in metadata store |
+| `POST` | `/analysis/answer` | Traceable RAG question answering with chunk-level citations |
+| `POST` | `/analysis/compare` | Isolated side-by-side disclosure comparison between two issuers |
+
 
 Example analysis request:
 
@@ -572,29 +619,69 @@ Recommended production upgrades for larger workloads:
 - Add integration tests against PostgreSQL in CI.
 - Add OpenTelemetry tracing and Prometheus metrics.
 
-## Testing
+## Testing & Verification
+
+The platform maintains a comprehensive multi-tier test suite covering core domain algorithms, pipeline orchestration, API contracts, SSRF security validation, and automated browser end-to-end flows.
+
+### 1. Standard Unit & Integration Test Suite
 
 ```bash
 python -m unittest discover -s tests
 ```
 
-Current verified local result:
-
+Current verified result:
 ```text
-Ran 16 tests in 0.017s
+Ran 34 tests in 0.265s
 
-OK (skipped=2)
+OK (skipped=7)
 ```
 
-The test suite covers:
+Test coverage includes:
+- **API Extensions**: Pagination, multi-parameter filtering, document chunks, SSRF attack rejection, issuer-isolated search.
+- **Financial Processing**: Topic classification, keyword extraction, sentence-level deterministic extractive summarisation.
+- **Validation & Quality**: Metadata validation, source URI validation, duplicate detection, and pipeline failure accounting.
+- **RAG & Chunking**: Chunk size bounds, overlap consistency, vector search ranking, and citation grounding.
 
-- Financial topic classification
-- Keyword extraction
-- Metadata preservation
-- Source and document validation
-- Duplicate detection and pipeline statistics
-- Vector search relevance
-- Qdrant integration test path
+### 2. Browser End-to-End Tests (Playwright)
+
+To verify the live user experience across all 5 workspace views using headless Chrome:
+
+```bash
+RUN_BROWSER_TESTS=1 python -m unittest tests/test_browser_e2e.py
+```
+
+Current verified result:
+```text
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 6.755s
+
+OK
+```
+
+### 3. Automated Screenshot Capture
+
+To regenerate the high-resolution documentation screenshots under `docs/images/`:
+
+```bash
+python scripts/capture_e2e_screenshots.py
+```
+
+## Reproducible Demo Dataset Ground Truth
+
+| Metric | Verified Ground Truth Value |
+| --- | --- |
+| **Total Ingested Documents** | 15 documents (12 official SEC filings + 3 regulatory/market excerpts) |
+| **Unique Issuers** | 7 (`AMAZON COM INC`, `Alphabet Inc.`, `Apple Inc.`, `Microsoft Corporation`, `Barclays PLC`, `Financial Conduct Authority`, `UK Market News`) |
+| **Indexed Vector Chunks** | 2,078 chunks |
+| **Publication Years** | 2025, 2026 |
+| **Raw Content Size** | 38.18 MB (HTML and text) |
+| **Metadata Store** | SQLite (`data/metadata.db`) & PostgreSQL schema |
+| **Vector Index** | LocalVectorStore (`data/index/vector_index.json`) & Qdrant |
+
+> [!NOTE]
+> The original repository's 500+ document figure is a planned pipeline scale target for long-running ingestion. The authentic, reproducible offline demo dataset in this repository contains 15 verified, multi-megabyte SEC filings and regulatory publications providing 2,078 vector chunks.
+
 
 ## Portfolio Relevance
 
